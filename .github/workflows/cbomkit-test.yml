@@ -1,0 +1,61 @@
+name: Test CBOMkit on Spring PetClinic
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  cbom-scan:
+    runs-on: ubuntu-latest
+    name: Generate CBOM for Spring PetClinic
+
+    permissions:
+      contents: read
+      actions: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 25
+          cache: maven
+
+      - name: Make Maven wrapper executable
+        run: chmod +x ./mvnw
+
+      - name: Build with Maven
+        run: ./mvnw -B clean package -DskipTests
+
+      - name: Show Java crypto usage before scan
+        run: |
+          echo "Searching for common Java crypto APIs:"
+          grep -R "MessageDigest\|Cipher\|KeyGenerator\|KeyPairGenerator\|Signature\|SecureRandom" src --include="*.java" || true
+
+      - name: Create CBOM
+        uses: cbomkit/cbomkit-action@v2.2.0
+        id: cbom
+        env:
+          CBOMKIT_LANGUAGES: java
+          CBOMKIT_OUTPUT_DIR: cbom
+          CBOMKIT_JAVA_REQUIRE_BUILD: true
+          CBOMKIT_WRITE_EMTPY_CBOMS: true
+
+      - name: List generated CBOM files
+        run: |
+          echo "CBOM output pattern: ${{ steps.cbom.outputs.pattern }}"
+          find cbom -type f -print || true
+          echo "Preview consolidated CBOM:"
+          cat cbom/cbom.json || true
+
+      - name: Upload CBOM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CBOM
+          path: ${{ steps.cbom.outputs.pattern }}
+          if-no-files-found: warn
