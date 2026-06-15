@@ -1,4 +1,5 @@
-// package model;
+package org.springframework.samples.petclinic;
+
 
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
