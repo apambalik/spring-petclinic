@@ -1,4 +1,4 @@
-package entity;
+// package model;
 
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
